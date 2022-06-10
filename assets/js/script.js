@@ -74,3 +74,10 @@ function createCard(book) {
 // ]
 
 // localStorage.setItem('books', JSON.stringify(tes));
+
+/**
+ * tinggal membuat fungsi 
+ * delete
+ * edit
+ * serach
+ */
