@@ -7,9 +7,9 @@ function pushElement(books) {
 
   for (let [key, book] of Object.entries(books)) {
     if (book.is_complete) {
-      finished.insertAdjacentHTML('beforeend', createCard(book))
+      finished.insertAdjacentHTML('beforeend', createCard(book));
     } else {
-      unfinish.insertAdjacentHTML('beforeend', createCard(book))
+      unfinish.insertAdjacentHTML('beforeend', createCard(book));
     }
   }
 }
@@ -23,19 +23,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     books = (JSON.parse(localStorage.getItem('books'))) ?? [];
 
-    if (books.length) { pushElement(books) }
+    if (books.length) { pushElement(books); }
 
   }
 });
 
 function addbook() {
-  let form = new FormData(document.getElementById('form'))
-  form.append('id', Date.now());
-  form = Object.fromEntries(form);
-  form.is_complete = (form.is_complete) ? true : false;
-  books.push(form);
-  localStorage.setItem('books', JSON.stringify(books));
+  let form = document.getElementById('form');
+
+  let formData = new FormData(form);
+  formData = Object.fromEntries(formData);
+  formData.is_complete = (form.is_complete) ? true : false;
+  formData.id = Date.now();
+  books.push(formData);
+
+  saveToLocal();
   pushElement(books);
+
+  form.reset();
 }
 
 function createCard(book) {
@@ -49,35 +54,87 @@ function createCard(book) {
                 <p class="card-text"><span class="author">${book.author}</span> - <span class="year">${book.year}</span></p>
                 <a class="btn btn-success" onclick="updateStatus('${book.id}')">${text}</a>
                 <a class="btn btn-warning" onclick="editBook('${book.id}')">Edit</a>
-                <a class="btn btn-danger" onclick="deleteBook('${book.id}')">Hapus</a>
+                <a class="btn btn-danger" onclick="if (confirm('apakah anda yakin ingin menghapus data ini?')) { deleteBook('${book.id}')}">Hapus</a>
               </div>
             </div>
           </div>`
 }
 
+function searchBookById(id) {
+  for (let [index, book] of Object.entries(books)) {
+    if (book.id == id) {
+      return index;
+    } 
+  }
+}
 
-// let tes = [
-//   {
-//     id: 123,
-//     title: 'The Mennonite Queen',
-//     author: 'Patrick E. Craig',
-//     year: 2018,
-//     isComplete: true,
-//   },
-//   {
-//     id: 456,
-//     title: 'The Scepter and the Isle',
-//     author: 'Patrick E. Craig',
-//     year: 2021,
-//     isComplete: false,
-//   }
-// ]
+function deleteBook(id) {
+  books.splice(searchBookById(id), 1);
 
-// localStorage.setItem('books', JSON.stringify(tes));
+  saveToLocal();
+  pushElement(books);
 
-/**
- * tinggal membuat fungsi 
- * delete
- * edit
- * serach
- */
+  alert('Data berhasil dihapus.');
+}
+
+function saveToLocal() {
+  localStorage.clear()
+  localStorage.setItem('books', JSON.stringify(books));
+}
+
+document.getElementById('search').addEventListener('submit', (event) => {
+  event.preventDefault();
+  document.getElementById('search-result').classList.remove('d-none');
+
+  let keyword = document.getElementById('keyword').value;
+
+  finished.innerHTML = '';
+  unfinish.innerHTML = '';
+
+  let result = [];
+
+  for (let [key, book] of Object.entries(books)) {
+    if (book.title.toLowerCase() == keyword.toLowerCase()) {
+      result.push(book);
+    } 
+  }
+
+  pushElement(result);
+})
+
+function updateStatus(id) {
+  books[searchBookById(id)].is_complete = (books[searchBookById(id)].is_complete) ? false : true;
+
+  saveToLocal();
+  pushElement(books);
+
+  alert('Data berhasil diperbarui.');
+}
+
+function editBook(id) {
+  new bootstrap.Modal('#modal').show();
+  let book = books[searchBookById(id)];
+
+  document.querySelector('#modal .modal-title').innerText = book.title;
+  document.querySelector('#modal .modal-body #id').value = book.id;
+  document.querySelector('#modal .modal-body #title').value = book.title;
+  document.querySelector('#modal .modal-body #author').value = book.author;
+  document.querySelector('#modal .modal-body #year').value = book.year;
+  document.querySelector('#modal .modal-body #is_complete').checked = (book.is_complete) ? true : false;
+}
+
+function updateBook() {
+  let formData = new FormData(document.getElementById('form-update'));
+  let index = searchBookById(formData.get('id'));
+
+  books[index].title = formData.get('title');
+  books[index].author = formData.get('author');
+  books[index].year = formData.get('year');
+  books[index].is_complete = formData.get('is_complete');
+
+  saveToLocal();
+  pushElement(books);
+
+  document.getElementById('modal-close').click();
+  alert('Data berhasil disimpan');
+}
